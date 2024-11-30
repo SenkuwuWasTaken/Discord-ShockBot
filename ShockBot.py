@@ -12,7 +12,7 @@ if not os.path.exists("settings.json"):
     default_settings = {
         "username": "",
         "api_key": "",
-        "sharecode": "",
+        "sharecodes": [""],
         "bot_token": "",
         "shockIntensityScale": 100,
         "myUserID": 0,
@@ -32,13 +32,13 @@ ShockAdmins = [int(user_id) for user_id in settingsData['ShockBotAdmins']]
 bannedUsers = [int(user_id) for user_id in settingsData['bannedUserIDs']]
 username = settingsData['username']
 api_key = settingsData['api_key']
-sharecode = settingsData['sharecode']
+sharecodes = settingsData['sharecodes']
 bot_token = settingsData['bot_token']
 shockIntensityScale = settingsData['shockIntensityScale']
 
-
 api = PiShockAPI(username, api_key)
-shocker = api.shocker(sharecode)
+shockers = [api.shocker(code) for code in sharecodes]
+
 if not api.verify_credentials():
     exit("Incorrect Pishock Credentials")
 
@@ -110,7 +110,8 @@ async def shock(interaction: discord.Interaction, duration: int, intensity: int)
         print("Command not sent, invalid duration.")
         return
 
-    shocker.shock(duration, intensity * shockIntensityScale)
+    for shocker in shockers:
+        shocker.shock(duration, intensity * shockIntensityScale)
 
     await interaction.response.send_message(
         f"{username} shocked by {user.name} at intensity {intensity} for {duration} seconds :3"
@@ -136,7 +137,8 @@ async def vibrate(interaction: discord.Interaction, duration: int, intensity: in
         print("Command not sent, invalid duration.")
         return
 
-    shocker.vibrate(duration, intensity * shockIntensityScale)
+    for shocker in shockers:
+        shocker.vibrate(duration, intensity * shockIntensityScale)
 
     await interaction.response.send_message(
         f"{username} shocked by {user.name} at intensity {intensity} for {duration} seconds :3"
@@ -152,7 +154,9 @@ async def pauseShocker(interaction: discord.Interaction):
         )
         return
 
-    shocker.pause(True)
+    for shocker in shockers:
+        shocker.pause(True)
+
     await interaction.response.send_message("Shocker paused")
     print(f"{interaction.user.name} paused the shocker.")
 
@@ -166,7 +170,9 @@ async def unpauseShocker(interaction: discord.Interaction):
         )
         return
 
-    shocker.pause(False)
+    for shocker in shockers:
+        shocker.pause(False)
+
     await interaction.response.send_message("Shocker paused")
     print(f"{interaction.user.name} paused the shocker.")
 
