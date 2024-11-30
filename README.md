@@ -3,7 +3,7 @@ Install requirements.txt and run the python file, a settings.json template will 
 ```
 "username": ""                --this is your PiShock account username
 "api_key": ""                 --this is you PiShock API key
-"sharecode": ""               --PiShock sharecode for a shocker
+"sharecodes": [""]            --PiShock sharecodes for your shockers
 "bot_token": ""               --Discord bot token
 "shockIntensityScale": 100    --All shocks and vibrations will be scaled with this number as the maximum intensity, it can be changed through discord commands
 "myUserID": 0                 --Copy Paste your discord UserID here so only you can use certain commands.
