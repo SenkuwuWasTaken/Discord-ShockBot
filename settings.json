@@ -1,0 +1,10 @@
+{
+    "username": "",
+    "api_key": "",
+    "sharecode": "",
+    "bot_token": "",
+    "shockIntensityScale": 100,
+    "myUserID": 0,
+    "ShockBotAdmins": [],
+    "bannedUserIDs": []
+}
