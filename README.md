@@ -1,5 +1,3 @@
-WARNING: this is currently untested on the PiShock side, as I don't have mine yet.
-
 1. Install requirements.txt and run the python file <br />
 This can be done manually, or with `install requirements.bat` <br />
 2. Settings.json template will appear for you to fill out, explanations below.
