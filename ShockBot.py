@@ -36,6 +36,8 @@ sharecodes = settingsData['sharecodes']
 bot_token = settingsData['bot_token']
 shockIntensityScale = settingsData['shockIntensityScale']
 
+paused = False
+
 api = PiShockAPI(username, api_key)
 shockers = [api.shocker(code) for code in sharecodes]
 
@@ -53,7 +55,16 @@ def is_banned(interaction: discord.Interaction):
         return True
     return False
 
-
+async def commandSanityCheck(interaction: discord.Interaction, intensity, duration):
+    if intensity < 1 or intensity > 100:
+        await interaction.response.send_message(f"Invalid intensity.", ephemeral=True)
+        print("Command not sent, invalid intensity.")
+        return
+    if duration < 0.1 or duration > 1.5:
+        await interaction.response.send_message(f"Invalid duration.", ephemeral=True)
+        print("Command not sent, invalid duration.")
+        return
+    
 # Event to indicate when the bot is ready
 @bot.event
 async def on_ready():
@@ -83,8 +94,8 @@ async def set_intensity_scale(interaction: discord.Interaction, scale: int):
         )
         return
     if scale < 1 or scale > 100:
-        shockIntensityScale = scale
-        settingsData['shockIntensityScale'] = shockIntensityScale
+        shockIntensityScale = scale / 100
+        settingsData['shockIntensityScale'] = scale
         save_json(settingsData)
     else:
         print("Invalid scaling value")
@@ -96,26 +107,29 @@ async def set_intensity_scale(interaction: discord.Interaction, scale: int):
 async def shock(interaction: discord.Interaction, duration: int, intensity: int):
     user = interaction.user
     print(f"User {user.name} invoked 'shock' with duration={duration} and intensity={intensity}")
+
     if is_banned(interaction):
         await interaction.response.send_message(f"Command not sent, you are banned from using this bot.", ephemeral=True)
         print(f"Command not ran, {interaction.user.name} is banned")
         return
+    
+    if not paused:
+        await commandSanityCheck(interaction, intensity=intensity, duration=duration)
+        
+        await interaction.response.send_message(
+            f"{username} shocked by {user.name} at intensity {intensity} for {duration} seconds :3"
+        )
 
-    if intensity < 1 or intensity > 100:
-        await interaction.response.send_message(f"Invalid intensity.", ephemeral=True)
-        print("Command not sent, invalid intensity.")
-        return
-    if duration < 0.1 or duration > 1.5:
-        await interaction.response.send_message(f"Invalid duration.", ephemeral=True)
-        print("Command not sent, invalid duration.")
-        return
+        for shocker in shockers:
+            print(shocker.sharecode)
+            shocker.shock(duration=duration, intensity=(intensity * shockIntensityScale))
+    else:
+        print("Shocker is currently paused")
+        await interaction.response.send_message(
+            "Shocker is currently paused"
+        )
 
-    for shocker in shockers:
-        shocker.shock(duration, intensity * shockIntensityScale)
-
-    await interaction.response.send_message(
-        f"{username} shocked by {user.name} at intensity {intensity} for {duration} seconds :3"
-    )
+    
 
 
 @bot.tree.command(name="vibrate_shocker")
@@ -123,46 +137,52 @@ async def shock(interaction: discord.Interaction, duration: int, intensity: int)
 async def vibrate(interaction: discord.Interaction, duration: int, intensity: int):
     user = interaction.user
     print(f"User {user.name} invoked 'vibrateshocker' with duration={duration} and intensity={intensity}")
+
     if is_banned(interaction):
         await interaction.response.send_message(f"Command not sent, you are banned from using this bot.", ephemeral=True)
         print(f"Command not ran, {interaction.user.name} is banned")
         return
 
-    if intensity < 1 or intensity > 100:
-        await interaction.response.send_message(f"Invalid intensity.", ephemeral=True)
-        print("Command not sent, invalid intensity.")
-        return
-    if duration < 0.1 or duration > 1.5:
-        await interaction.response.send_message(f"Invalid duration.", ephemeral=True)
-        print("Command not sent, invalid duration.")
-        return
+    if not paused:
+        await commandSanityCheck(interaction, intensity=intensity, duration=duration)
 
-    for shocker in shockers:
-        shocker.vibrate(duration, intensity * shockIntensityScale)
+        await interaction.response.send_message(
+            f"{username}'s shocker was vibrated by {user.name} at intensity {intensity} for {duration} seconds :3"
+        )
 
-    await interaction.response.send_message(
-        f"{username} shocked by {user.name} at intensity {intensity} for {duration} seconds :3"
-    )
+        for shocker in shockers:
+            shocker.vibrate(duration=duration, intensity=(intensity * shockIntensityScale))
+    else:
+        print("Shocker is currently paused")
+        await interaction.response.send_message(
+            "Shocker is currently paused"
+        )
+
+    
 
 
 @bot.tree.command(name="pause_shocker")
 async def pauseShocker(interaction: discord.Interaction):
+    global paused
 
     if interaction.user.id not in ShockAdmins :
         await interaction.response.send_message(
             "You do not have permission to run this command.", ephemeral=True
         )
         return
+    
+    await interaction.response.send_message("Shocker paused")
+    print(f"{interaction.user.name} paused the shocker.")
 
     for shocker in shockers:
         shocker.pause(True)
+    paused = True
 
-    await interaction.response.send_message("Shocker paused")
-    print(f"{interaction.user.name} paused the shocker.")
 
 
 @bot.tree.command(name="unpause_shocker")
 async def unpauseShocker(interaction: discord.Interaction):
+    global paused
 
     if interaction.user.id not in ShockAdmins:
         await interaction.response.send_message(
@@ -170,11 +190,14 @@ async def unpauseShocker(interaction: discord.Interaction):
         )
         return
 
-    for shocker in shockers:
-        shocker.pause(False)
-
     await interaction.response.send_message("Shocker paused")
     print(f"{interaction.user.name} paused the shocker.")
+
+    for shocker in shockers:
+        shocker.pause(False)
+    paused = False
+
+    
 
 
 bot.run(bot_token)
